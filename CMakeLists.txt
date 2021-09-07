@@ -1,0 +1,34 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.18)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+project(gdstl)
+
+# Checks
+
+IF(NOT GDSTL_TARGET)
+    MESSAGE(FATAL_ERROR "\"GDSTL_TARGET\" variable not set!")
+ENDIF()
+
+STRING(TOLOWER ${GDSTL_TARGET} GDSTL_TARGET_LOWER)
+
+IF (NOT GDSTL_TARGET_LOWER STREQUAL "windows")
+    MESSAGE(FATAL_ERROR "Invalid \"GDSTL_TARGET\" value!")
+ENDIF()
+
+# Include directories
+
+INCLUDE_DIRECTORIES(
+	include
+)
+
+#Source files
+
+set (GDSTL_SRC
+    ../src/${GDSTL_TARGET_LOWER}_allocator.cpp
+)
+
+# Define library
+
+ADD_LIBRARY(gdstl STATIC ${GDSTL_SRC})
