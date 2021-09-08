@@ -7,13 +7,12 @@
 
 namespace gdstd
 {
-#if defined(GDSTL_ENABLED)
 #if defined(GDSTL_USES_MSVC)
 	template <typename T>
 	class basic_string
 	{
-		template <typename T>
-		friend ::std::basic_string<T> to_basic_string(basic_string<T> const&);
+		template <typename R>
+		friend ::std::basic_string<R> to_basic_string(basic_string<R> const&);
 
 		static auto constexpr BUF_SIZE = 16u;
 		static auto constexpr MAX_CHAR_SIZE = BUF_SIZE / sizeof(T);
@@ -47,8 +46,13 @@ namespace gdstd
 			}
 			else
 			{
-				m_Capacity = gdstd::round_size(m_Length);
+				m_Capacity = ::gdstd::round_size(m_Length);
 				m_Data.m_P = ::gdstd::allocate<T*>(m_Capacity);
+
+				std::memset(
+					reinterpret_cast<void*>(m_Data.m_P),
+					0x00,
+					m_Capacity);
 
 				::std::memcpy(
 					reinterpret_cast<void*>(m_Data.m_P),
@@ -99,7 +103,7 @@ namespace gdstd
 	};
 
 	template <typename T>
-	::std::basic_string<T> to_basic_string(basic_string<T> const& v)
+	::std::basic_string<T> to_basic_string(::gdstd::basic_string<T> const& v)
 	{
 		if (v.m_Length <= v.MAX_CHAR_SIZE)
 		{
@@ -113,9 +117,9 @@ namespace gdstd
 	template <typename T>
 	class basic_string
 	{
-		template <typename T>
-		friend ::std::basic_string<T> to_basic_string(basic_string<T> const&);
-		
+		template <typename R>
+		friend ::std::basic_string<R> to_basic_string(basic_string<R> const&);
+
 		struct RepBase
 		{
 			::std::size_t m_Length;
@@ -168,44 +172,41 @@ namespace gdstd
 		{
 			RepBase rep = {};
 
-			rep.m_Length = rhs.size();
-			rep.m_Capacity = rhs.size();
-			rep.m_RefCount = 0u;
-
 			auto const allocSize = ::gdstd::round_size(
 				sizeof(RepBase) + ((rep.m_Capacity + 1u) * sizeof(T)));
+
+			rep.m_Length = rhs.size();
+			rep.m_Capacity = allocSize - sizeof(RepBase);
+			rep.m_RefCount = 0u;
 
 			m_P = ::gdstd::allocate<T*>(allocSize);
 
 			::std::memset(reinterpret_cast<void*>(m_P), 0x00, allocSize);
-			::std::memcpy(m_P, &rep, sizeof(RepBase));
+
+			::std::memcpy(
+				reinterpret_cast<void*>(m_P),
+				&rep,
+				sizeof(RepBase));
 
 			m_P = reinterpret_cast<T*>(
 				reinterpret_cast<::std::uintptr_t>(m_P) + sizeof(RepBase));
+
+			::std::memcpy(
+				reinterpret_cast<void*>(m_P),
+				rhs.data(),
+				rep.m_Length * sizeof(T));
 		}
+
+		basic_string(T const* p)
+			: basic_string(::std::basic_string<T>(p)) {}
 	};
 
 	template <typename T>
-	::std::basic_string<T> to_basic_string(basic_string<T> const& v)
+	::std::basic_string<T> to_basic_string(::gdstd::basic_string<T> const& v)
 	{
 		return ::std::basic_string<T>(v.m_P, v.data()->m_Length);
 	}
 #endif // GDSTL_USES_MSVC
-#else
-	template <typename T>
-	struct basic_string
-		: private ::std::basic_string<T>
-	{
-		template <typename T>
-		friend ::std::basic_string<T> to_basic_string(basic_string<T> const&);
-	};
-
-	template <typename T>
-	::std::basic_string<T> to_basic_string(basic_string<T> const& v)
-	{
-		return v;
-	}
-#endif // GDSTL_ENABLED
 
 	using string = ::gdstd::basic_string<char>;
 	using wstring = ::gdstd::basic_string<wchar_t>;

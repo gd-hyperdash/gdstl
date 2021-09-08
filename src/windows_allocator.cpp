@@ -1,8 +1,5 @@
 #include <Windows.h>
 
-#include <cstdlib>
-#include <cstdint>
-
 // Types
 
 typedef void*(__cdecl *alloc_new_T)(unsigned int);
@@ -35,35 +32,35 @@ static HMODULE getHandle()
 
 extern "C"
 {
-    std::uintptr_t gdstd_allocate_raw(std::size_t const size)
-{
-    static alloc_new_T callNew = nullptr;
-
-    if (!callNew)
+    uintptr_t gdstd_allocate_raw(size_t const size)
     {
-        callNew = reinterpret_cast<alloc_new_T>(
-            GetProcAddress(getHandle(), NEW_SYM));
+        static alloc_new_T callNew = nullptr;
 
         if (!callNew)
-            ExitProcess(1);
+        {
+            callNew = reinterpret_cast<alloc_new_T>(
+                GetProcAddress(getHandle(), NEW_SYM));
+
+            if (!callNew)
+                ExitProcess(1);
+        }
+
+        return reinterpret_cast<uintptr_t>(callNew(size));
     }
 
-    return reinterpret_cast<std::uintptr_t>(callNew(size));
-}
-
-void gdstd_free_raw(::std::uintptr_t p)
-{
-    static alloc_delete_T callDelete = nullptr;
-
-    if (!callDelete)
+    void gdstd_free_raw(uintptr_t p)
     {
-        callDelete = reinterpret_cast<alloc_delete_T>(
-            GetProcAddress(getHandle(), DELETE_SYM));
+        static alloc_delete_T callDelete = nullptr;
 
         if (!callDelete)
-            ExitProcess(1);
-    }
+        {
+            callDelete = reinterpret_cast<alloc_delete_T>(
+                GetProcAddress(getHandle(), DELETE_SYM));
 
-    callDelete(reinterpret_cast<void*>(p));
-}
+            if (!callDelete)
+                ExitProcess(1);
+        }
+
+        callDelete(reinterpret_cast<void*>(p));
+    }
 }
