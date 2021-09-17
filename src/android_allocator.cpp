@@ -1,10 +1,22 @@
 #include <stdlib.h>
+#include <signal.h>
 #include <dlfcn.h>
+
+#if defined(__aarch64__) || defined(__x86_64__)
+#define GDSTL_TARGET_64
+#elif defined(__arm__) || defined(__thumb__) || defined(__i386__)
+#define GDSTL_TARGET_32
+#endif
 
 // Types
 
+#if defined(GDSTL_TARGET_64)
+typedef void*(*alloc_new_T)(unsigned long);
+#elif defined(GDSTL_TARGET_32)
 typedef void*(*alloc_new_T)(unsigned int);
-typedef void(*alloc_delete_T)(void *);
+#endif
+
+typedef void(*alloc_delete_T)(void*);
 
 // Globals
 
@@ -16,12 +28,24 @@ static char const* MOD_NAMES[MOD_NAMES_N] =
     "libgame.so",
 };
 
+#if defined(GDSTL_TARGET_64)
+static auto constexpr NEW_SYM = "_Znwm";
+#elif defined(GDSTL_TARGET_32)
 static auto constexpr NEW_SYM = "_Znwj";
+#endif
+
 static auto constexpr DELETE_SYM = "_ZdlPv";
 
 // Helpers
 
-static void* getHandle()
+[[noreturn]]
+void throwex()
+{
+    raise(SIGTRAP);
+    abort();
+}
+
+static void* open_handle()
 {
     static void* h = NULL;
 
@@ -38,7 +62,7 @@ static void* getHandle()
         }
 
         if (h == NULL)
-            abort();
+            throwex();
     }
 
     return h;
@@ -48,35 +72,35 @@ static void* getHandle()
 
 extern "C"
 {
-    uintptr_t gdstd_allocate_raw(size_t const size)
+    void* gdstd_allocate_raw(size_t const size)
     {
         static alloc_new_T callNew = nullptr;
 
         if (!callNew)
         {
             callNew = reinterpret_cast<alloc_new_T>(
-                dlsym(getHandle(), NEW_SYM));
+                dlsym(open_handle(), NEW_SYM));
 
             if (!callNew)
-                abort();
+                throwex();
         }
 
-        return reinterpret_cast<uintptr_t>(callNew(size));
+        return callNew(size);
     }
 
-    void gdstd_free_raw(uintptr_t p)
+    void gdstd_free_raw(void* p)
     {
         static alloc_delete_T callDelete = nullptr;
 
         if (!callDelete)
         {
             callDelete = reinterpret_cast<alloc_delete_T>(
-                dlsym(getHandle(), DELETE_SYM));
+                dlsym(open_handle(), DELETE_SYM));
 
             if (!callDelete)
-                abort();
+                throwex();
         }
 
-        callDelete(reinterpret_cast<void*>(p));
+        callDelete(p);
     }
 }

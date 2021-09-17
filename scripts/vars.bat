@@ -7,5 +7,5 @@ if "%GDSTL_TARGET%" == "windows" (
     set CFLAGS=-m32 %CFLAGS%
     set CXXFLAGS=-m32 %CXXFLAGS%
 )
-set GDSTL_NDK=C:/Users/nicol/Desktop/HyperDashStuff/NDKs/android-ndk-r16b
+set GDSTL_NDK=path/to/ndk/root/with/forward/slashes
 set GDSTL_PATH=%CD%

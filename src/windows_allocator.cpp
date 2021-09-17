@@ -2,8 +2,8 @@
 
 // Types
 
-typedef void*(__cdecl *alloc_new_T)(unsigned int);
-typedef void(__cdecl *alloc_delete_T)(void *);
+typedef LPVOID(__cdecl *alloc_new_T)(unsigned int);
+typedef void(__cdecl *alloc_delete_T)(LPVOID);
 
 // Globals
 
@@ -13,7 +13,14 @@ static auto constexpr DELETE_SYM = "??3@YAXPAX@Z";
 
 // Helpers
 
-static HMODULE getHandle()
+[[noreturn]]
+void ThrowException()
+{
+    DebugBreak();
+    abort();
+}
+
+static HMODULE GetHandle()
 {
     static HMODULE h = NULL;
 
@@ -22,7 +29,7 @@ static HMODULE getHandle()
         h = GetModuleHandleW(MOD_NAME);
 
         if (h == NULL)
-            ExitProcess(1);
+            ThrowException();
     }
 
     return h;
@@ -32,35 +39,35 @@ static HMODULE getHandle()
 
 extern "C"
 {
-    uintptr_t gdstd_allocate_raw(size_t const size)
+    LPVOID gdstd_allocate_raw(SIZE_T const size)
     {
         static alloc_new_T callNew = nullptr;
 
         if (!callNew)
         {
             callNew = reinterpret_cast<alloc_new_T>(
-                GetProcAddress(getHandle(), NEW_SYM));
+                GetProcAddress(GetHandle(), NEW_SYM));
 
             if (!callNew)
-                ExitProcess(1);
+                ThrowException();
         }
 
-        return reinterpret_cast<uintptr_t>(callNew(size));
+        return callNew(size);
     }
 
-    void gdstd_free_raw(uintptr_t p)
+    void gdstd_free_raw(LPVOID p)
     {
         static alloc_delete_T callDelete = nullptr;
 
         if (!callDelete)
         {
             callDelete = reinterpret_cast<alloc_delete_T>(
-                GetProcAddress(getHandle(), DELETE_SYM));
+                GetProcAddress(GetHandle(), DELETE_SYM));
 
             if (!callDelete)
-                ExitProcess(1);
+                ThrowException();
         }
 
-        callDelete(reinterpret_cast<void*>(p));
+        callDelete(p);
     }
 }
