@@ -39,7 +39,7 @@ static HMODULE GetHandle()
 
 extern "C"
 {
-    LPVOID gdstd_allocate_raw(SIZE_T const size)
+    LPVOID gdstd_allocate(SIZE_T const size)
     {
         static alloc_new_T callNew = nullptr;
 
@@ -55,7 +55,7 @@ extern "C"
         return callNew(size);
     }
 
-    void gdstd_free_raw(LPVOID p)
+    void gdstd_free(LPVOID p)
     {
         static alloc_delete_T callDelete = nullptr;
 

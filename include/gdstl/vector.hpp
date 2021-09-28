@@ -33,7 +33,7 @@ namespace gdstd
 			void const* p,
 			::std::size_t const size)
 		{
-			m_Data.m_Finish = size;
+			m_Data.m_Finish = size * sizeof(T);
 			m_Data.m_StorageEnd = m_Data.m_Finish;
 
 			m_Data.m_P = ::gdstd::allocate<T*>(m_Data.m_StorageEnd);
@@ -134,7 +134,7 @@ namespace gdstd
 		friend ::std::vector<bool> to_vector(vector<bool> const&);
 
 	protected:
-		std::vector<::std::uint32_t> m_Vec;
+		::std::vector<::std::uint32_t> m_Vec;
 		::std::size_t m_Size;
 
 		::std::uint8_t const* internal_data() const
@@ -340,7 +340,7 @@ namespace gdstd
 		::std::vector<bool> ret;
 		auto buffer = v.internal_data();
 
-		for (auto i = 0; i < v.item_count(); ++i)
+		for (auto i = 0u; i < v.item_count(); ++i)
 		{
 			auto const byte = i / 8u;
 			auto const pos = i & 7u;

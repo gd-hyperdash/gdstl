@@ -33,12 +33,11 @@ namespace gdstd
 			::std::size_t const length)
 		{
 			m_Length = length;
+			m_Capacity = length;
 			::std::memset(&m_Data, 0x00, sizeof(StringBase));
 
-			if (m_Length <= MAX_CHAR_SIZE)
+			if (m_Length < MAX_CHAR_SIZE)
 			{
-				m_Capacity = MAX_CHAR_SIZE;
-
 				::std::memcpy(
 					reinterpret_cast<void*>(&m_Data),
 					p,
@@ -46,13 +45,12 @@ namespace gdstd
 			}
 			else
 			{
-				m_Capacity = m_Length + 1u;
-				m_Data.m_P = ::gdstd::allocate<T*>(m_Capacity);
+				m_Data.m_P = ::gdstd::allocate<T*>(m_Length * sizeof(T));
 
-				std::memset(
+				::std::memset(
 					reinterpret_cast<void*>(m_Data.m_P),
 					0x00,
-					m_Capacity);
+					m_Length * sizeof(T));
 
 				::std::memcpy(
 					reinterpret_cast<void*>(m_Data.m_P),
@@ -63,7 +61,7 @@ namespace gdstd
 
 		void clear_data()
 		{
-			if (m_Length > MAX_CHAR_SIZE)
+			if (m_Length >= MAX_CHAR_SIZE)
 				::gdstd::free(m_Data.m_P);
 
 			m_Data = {};
@@ -73,7 +71,7 @@ namespace gdstd
 
 		bool is_valid() const
 		{
-			return m_Capacity != 0;
+			return m_Capacity != 0u;
 		}
 
 		basic_string()
@@ -127,7 +125,7 @@ namespace gdstd
 
 			auto length = rhs.m_Length;
 
-			if (length <= MAX_CHAR_SIZE)
+			if (length < MAX_CHAR_SIZE)
 			{
 				init_data(
 					reinterpret_cast<void const*>(&rhs.m_Data),
@@ -160,7 +158,7 @@ namespace gdstd
 	{
 		if (v.is_valid())
 		{
-			if (v.m_Length <= v.MAX_CHAR_SIZE)
+			if (v.m_Length < v.MAX_CHAR_SIZE)
 			{
 				return ::std::basic_string<T>(
 					reinterpret_cast<T const*>(&v.m_Data.m_Buffer),
@@ -187,17 +185,41 @@ namespace gdstd
 	protected:
 		T* m_P;
 
+		RepBase const* data() const
+		{
+			return reinterpret_cast<RepBase*>(
+				reinterpret_cast<::std::uintptr_t>(m_P) -
+				sizeof(RepBase));
+		}
+
+		RepBase* data()
+		{
+			return reinterpret_cast<RepBase*>(
+				reinterpret_cast<::std::uintptr_t>(m_P) -
+				sizeof(RepBase));
+		}
+
+		::std::size_t increment_refc()
+		{
+			return ++data()->m_RefCount;
+		}
+
+		::std::size_t decrement_refc()
+		{
+			return --data()->m_RefCount;
+		}
+
 		void init_data(
 			void const* p,
 			::std::size_t const length)
 		{
 			RepBase rep = {};
 
-			auto const allocSize = sizeof(RepBase) + ((length + 1u) * sizeof(T));
-
 			rep.m_Length = length;
-			rep.m_Capacity = allocSize - sizeof(RepBase);
+			rep.m_Capacity = rep.m_Length + 1u;
 			rep.m_RefCount = 0u;
+
+			auto const allocSize = sizeof(RepBase) + (rep.m_Capacity * sizeof(T));
 
 			m_P = ::gdstd::allocate<T*>(allocSize);
 
@@ -219,9 +241,9 @@ namespace gdstd
 
 		void clear_data()
 		{
-			--data()->m_RefCount;
+			auto refc = decrement_refc();
 
-			if (data()->m_RefCount <= 0u)
+			if (refc <= 0u)
 				::gdstd::free(data());
 
 			m_P = nullptr;
@@ -230,20 +252,6 @@ namespace gdstd
 		bool is_valid() const
 		{
 			return m_P != nullptr;
-		}
-
-		RepBase const* data() const
-		{
-			return reinterpret_cast<RepBase*>(
-				reinterpret_cast<::std::uintptr_t>(m_P) -
-				sizeof(RepBase));
-		}
-
-		RepBase* data()
-		{
-			return reinterpret_cast<RepBase*>(
-				reinterpret_cast<::std::uintptr_t>(m_P) -
-				sizeof(RepBase));
 		}
 
 		basic_string()
@@ -296,7 +304,7 @@ namespace gdstd
 
 			clear_data();
 			m_P = rhs.m_P;
-			++data()->m_RefCount;
+			increment_refc();
 		}
 
 		void assign(::std::basic_string<T> const& rhs)
@@ -326,8 +334,15 @@ namespace gdstd
 	using string = ::gdstd::basic_string<char>;
 	using wstring = ::gdstd::basic_string<wchar_t>;
 
-	static auto constexpr& to_string = to_basic_string<char>;
-	static auto constexpr& to_wstring = to_basic_string<wchar_t>;
+	inline ::std::string to_string(gdstd::string const& s)
+	{
+		return to_basic_string(s);
+	}
+
+	inline ::std::wstring to_wstring(gdstd::wstring const& s)
+	{
+		return to_basic_string(s);
+	}
 }
 
 #endif /* _GDSTL_STRING_HPP */

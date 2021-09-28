@@ -7,8 +7,11 @@
 
 namespace gdstd
 {
-	extern "C" ::std::uintptr_t gdstd_allocate_raw(::std::size_t const size);
-	extern "C" void gdstd_free_raw(::std::uintptr_t p);
+	namespace raw
+	{
+		extern "C" ::std::uintptr_t gdstd_allocate(::std::size_t const size);
+		extern "C" void gdstd_free(::std::uintptr_t p);
+	}
 
 	template <typename T>
 	typename ::std::enable_if<
@@ -16,7 +19,7 @@ namespace gdstd
 		T>::type allocate(::std::size_t const size)
 	{
 		return reinterpret_cast<T>(
-			gdstd_allocate_raw(size));
+			raw::gdstd_allocate(size));
 	}
 
 	template <typename T>
@@ -24,7 +27,7 @@ namespace gdstd
 		::std::is_pointer<T>::value
 		>::type free(T p)
 	{
-		gdstd_free_raw(reinterpret_cast<::std::uintptr_t>(p));
+		raw::gdstd_free(reinterpret_cast<::std::uintptr_t>(p));
 	}
 }
 

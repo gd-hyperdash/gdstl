@@ -72,7 +72,7 @@ static void* get_handle()
 
 extern "C"
 {
-    void* gdstd_allocate_raw(size_t const size)
+    void* gdstd_allocate(size_t const size)
     {
         static alloc_new_T callNew = nullptr;
 
@@ -88,7 +88,7 @@ extern "C"
         return callNew(size);
     }
 
-    void gdstd_free_raw(void* p)
+    void gdstd_free(void* p)
     {
         static alloc_delete_T callDelete = nullptr;
 
