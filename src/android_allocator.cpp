@@ -45,7 +45,7 @@ void throwex()
     abort();
 }
 
-static void* open_handle()
+static void* get_handle()
 {
     static void* h = NULL;
 
@@ -79,7 +79,7 @@ extern "C"
         if (!callNew)
         {
             callNew = reinterpret_cast<alloc_new_T>(
-                dlsym(open_handle(), NEW_SYM));
+                dlsym(get_handle(), NEW_SYM));
 
             if (!callNew)
                 throwex();
@@ -95,7 +95,7 @@ extern "C"
         if (!callDelete)
         {
             callDelete = reinterpret_cast<alloc_delete_T>(
-                dlsym(open_handle(), DELETE_SYM));
+                dlsym(get_handle(), DELETE_SYM));
 
             if (!callDelete)
                 throwex();

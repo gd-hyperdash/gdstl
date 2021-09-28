@@ -46,7 +46,7 @@ namespace gdstd
 			}
 			else
 			{
-				m_Capacity = ::gdstd::round_size(m_Length);
+				m_Capacity = m_Length + 1u;
 				m_Data.m_P = ::gdstd::allocate<T*>(m_Capacity);
 
 				std::memset(
@@ -61,8 +61,70 @@ namespace gdstd
 			}
 		}
 
-		basic_string(basic_string<T> const& rhs)
+		void clear_data()
 		{
+			if (m_Length > MAX_CHAR_SIZE)
+				::gdstd::free(m_Data.m_P);
+
+			m_Data = {};
+			m_Length = 0u;
+			m_Capacity = 0u;
+		}
+
+		bool is_valid() const
+		{
+			return m_Capacity != 0;
+		}
+
+		basic_string()
+			: m_Data({}), m_Length(0u), m_Capacity(0u) {}
+
+	public:
+		basic_string(basic_string<T>&&) = delete;
+
+		~basic_string()
+		{
+			clear_data();
+		}
+
+		basic_string(basic_string<T> const& rhs)
+			: basic_string()
+		{
+			assign(rhs);
+		}
+
+		basic_string(::std::basic_string<T> const& rhs)
+			: basic_string()
+		{
+			assign(rhs);
+		}
+
+		basic_string(T const* p)
+			: basic_string(::std::basic_string<T>(p)) {}
+
+		basic_string<T>& operator=(basic_string<T> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		basic_string<T>& operator=(::std::basic_string<T> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		basic_string<T>& operator=(T const* p)
+		{
+			assign(p);
+			return *this;
+		}
+
+		void assign(basic_string<T> const& rhs)
+		{
+			if (this == &rhs)
+				return;
+
 			auto length = rhs.m_Length;
 
 			if (length <= MAX_CHAR_SIZE)
@@ -79,39 +141,35 @@ namespace gdstd
 			}
 		}
 
-	public:
-		basic_string() = delete;
-		basic_string(basic_string<T>&&) = delete;
-
-		~basic_string()
+		void assign(::std::basic_string<T> const& rhs)
 		{
-			if (m_Length > MAX_CHAR_SIZE)
-			{
-				::gdstd::free(m_Data.m_P);
-				m_Data.m_P = nullptr;
-			}
-		}
-
-		basic_string<T>& operator=(basic_string<T> const&) = delete;
-
-		basic_string(::std::basic_string<T> const& rhs)
-		{
+			clear_data();
 			init_data(
 				reinterpret_cast<void const*>(rhs.data()),
 				rhs.length());
+		}
+
+		void assign(T const* p)
+		{
+			assign(::std::basic_string<T>(p));
 		}
 	};
 
 	template <typename T>
 	::std::basic_string<T> to_basic_string(::gdstd::basic_string<T> const& v)
 	{
-		if (v.m_Length <= v.MAX_CHAR_SIZE)
+		if (v.is_valid())
 		{
-			return ::std::basic_string<T>(
-				reinterpret_cast<T const*>(&v.m_Data.m_Buffer),
-				v.m_Length);
+			if (v.m_Length <= v.MAX_CHAR_SIZE)
+			{
+				return ::std::basic_string<T>(
+					reinterpret_cast<T const*>(&v.m_Data.m_Buffer),
+					v.m_Length);
+			}
+			return ::std::basic_string<T>(v.m_Data.m_P, v.m_Length);
 		}
-		return ::std::basic_string<T>(v.m_Data.m_P, v.m_Length);
+
+		return ::std::basic_string<T>();
 	}
 #else
 	template <typename T>
@@ -129,53 +187,15 @@ namespace gdstd
 	protected:
 		T* m_P;
 
-		RepBase const* data() const
-		{
-			return reinterpret_cast<RepBase*>(
-				reinterpret_cast<::std::uintptr_t>(m_P) -
-				sizeof(RepBase));
-		}
-
-		RepBase* data()
-		{
-			return reinterpret_cast<RepBase*>(
-				reinterpret_cast<::std::uintptr_t>(m_P) -
-				sizeof(RepBase));
-		}
-
-		basic_string(basic_string<T> const& rhs)
-		{
-			if (this == &rhs)
-				return;
-
-			m_P = rhs.m_P;
-			++data()->m_RefCount;
-		}
-	public:
-		basic_string() = delete;
-		basic_string(basic_string<T>&&) = delete;
-
-		~basic_string()
-		{
-			--data()->m_RefCount;
-
-			if (data()->m_RefCount <= 0u)
-			{
-				::gdstd::free(m_P);
-			}
-		}
-
-		basic_string<T>& operator=(basic_string<T> const&) = delete;
-
-		basic_string(::std::basic_string<T> const& rhs)
-			: m_P(nullptr)
+		void init_data(
+			void const* p,
+			::std::size_t const length)
 		{
 			RepBase rep = {};
 
-			auto const allocSize = ::gdstd::round_size(
-				sizeof(RepBase) + ((rep.m_Capacity + 1u) * sizeof(T)));
+			auto const allocSize = sizeof(RepBase) + ((length + 1u) * sizeof(T));
 
-			rep.m_Length = rhs.size();
+			rep.m_Length = length;
 			rep.m_Capacity = allocSize - sizeof(RepBase);
 			rep.m_RefCount = 0u;
 
@@ -193,18 +213,113 @@ namespace gdstd
 
 			::std::memcpy(
 				reinterpret_cast<void*>(m_P),
-				rhs.data(),
+				p,
 				rep.m_Length * sizeof(T));
+		}
+
+		void clear_data()
+		{
+			--data()->m_RefCount;
+
+			if (data()->m_RefCount <= 0u)
+				::gdstd::free(data());
+
+			m_P = nullptr;
+		}
+
+		bool is_valid() const
+		{
+			return m_P != nullptr;
+		}
+
+		RepBase const* data() const
+		{
+			return reinterpret_cast<RepBase*>(
+				reinterpret_cast<::std::uintptr_t>(m_P) -
+				sizeof(RepBase));
+		}
+
+		RepBase* data()
+		{
+			return reinterpret_cast<RepBase*>(
+				reinterpret_cast<::std::uintptr_t>(m_P) -
+				sizeof(RepBase));
+		}
+
+		basic_string()
+			: m_P(nullptr) {}
+	public:
+		basic_string(basic_string<T>&&) = delete;
+
+		~basic_string()
+		{
+			clear_data();
+		}
+
+		basic_string(basic_string<T> const& rhs)
+			: basic_string()
+		{
+			assign(rhs);
+		}
+
+		basic_string(::std::basic_string<T> const& rhs)
+			: basic_string()
+		{
+			assign(rhs);
 		}
 
 		basic_string(T const* p)
 			: basic_string(::std::basic_string<T>(p)) {}
+
+		basic_string<T>& operator=(basic_string<T> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		basic_string<T>& operator=(::std::basic_string<T> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		basic_string<T>& operator=(T const* p)
+		{
+			assign(p);
+			return *this;
+		}
+
+		void assign(basic_string<T> const& rhs)
+		{
+			if (this == &rhs)
+				return;
+
+			clear_data();
+			m_P = rhs.m_P;
+			++data()->m_RefCount;
+		}
+
+		void assign(::std::basic_string<T> const& rhs)
+		{
+			clear_data();
+			init_data(
+				reinterpret_cast<void const*>(rhs.data()),
+				rhs.length());
+		}
+
+		void assign(T const* p)
+		{
+			assign(::std::basic_string<T>(p));
+		}
 	};
 
 	template <typename T>
 	::std::basic_string<T> to_basic_string(::gdstd::basic_string<T> const& v)
 	{
-		return ::std::basic_string<T>(v.m_P, v.data()->m_Length);
+		if (v.is_valid())
+			return ::std::basic_string<T>(v.m_P, v.data()->m_Length);
+
+		return ::std::basic_string<T>();
 	}
 #endif // GDSTL_USES_MSVC
 

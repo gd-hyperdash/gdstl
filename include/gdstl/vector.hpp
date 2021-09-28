@@ -11,8 +11,8 @@ namespace gdstd
 	template <typename T>
 	class vector
 	{
-		template <typename T>
-		friend ::std::vector<T> to_vector(vector<T> const&);
+		template <typename R>
+		friend ::std::vector<R> to_vector(vector<R> const&);
 
 		struct VectorBase
 		{
@@ -34,7 +34,7 @@ namespace gdstd
 			::std::size_t const size)
 		{
 			m_Data.m_Finish = size;
-			m_Data.m_StorageEnd = ::gdstd::round_size(m_Data.m_Finish);
+			m_Data.m_StorageEnd = m_Data.m_Finish;
 
 			m_Data.m_P = ::gdstd::allocate<T*>(m_Data.m_StorageEnd);
 
@@ -52,24 +52,63 @@ namespace gdstd
 			m_Data.m_StorageEnd += m_Data.m_Start;
 		}
 
-		vector(vector<T> const& rhs)
+		void clear_data()
 		{
-			init_data(reinterpret_cast<void const*>(rhs.m_Data.m_P),
-				rhs.m_Data.m_Finish - rhs.m_Data.m_Start);
+			::gdstd::free(m_Data.m_P);
+			m_Data = {};
 		}
+
+		bool is_valid() const
+		{
+			return m_Data.m_P != nullptr;
+		}
+
+		vector()
+			: m_Data({}) {}
+
 	public:
-		vector() = delete;
 		vector(vector<T>&&) = delete;
 
 		~vector()
 		{
-			::gdstd::free(m_Data.m_P);
+			clear_data();
 		}
 
-		vector<T>& operator=(vector<T> const&) = delete;
+		vector(vector<T> const& rhs)
+			: vector()
+		{
+			assign(rhs);
+		}
 
 		vector(::std::vector<T> const& rhs)
+			: vector()
 		{
+			assign(rhs);
+		}
+
+		vector<T>& operator=(vector<T> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		vector<T>& operator=(::std::vector<T> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		void assign(vector<T> const& rhs)
+		{
+			clear_data();
+			init_data(
+				reinterpret_cast<void const*>(rhs.m_Data.m_P),
+				rhs.m_Data.m_Finish - rhs.m_Data.m_Start);
+		}
+
+		void assign(::std::vector<T> const& rhs)
+		{
+			clear_data();
 			init_data(
 				reinterpret_cast<void const*>(rhs.data()),
 				rhs.size());
@@ -79,11 +118,16 @@ namespace gdstd
 	template <typename T>
 	::std::vector<T> to_vector(::gdstd::vector<T> const& v)
 	{
-		return ::std::vector<T>(
-			v.m_Data.m_P,
-			reinterpret_cast<T*>(v.m_Data.m_Finish));
+		if (v.is_valid())
+		{
+			return ::std::vector<T>(
+				v.m_Data.m_P,
+				reinterpret_cast<T*>(v.m_Data.m_Finish));
+		}
+
+		return ::std::vector<T>();
 	}
-#if defined(GDSTL_USES_MSVC)
+#if 0 && defined(GDSTL_USES_MSVC)
 	template<>
 	class vector<bool>
 	{
@@ -103,21 +147,44 @@ namespace gdstd
 			return m_Size;
 		}
 
+		vector()
+			: m_Size(0u) {}
+
+	public:
+		vector(vector<bool>&&) = delete;
+		~vector() = default;
+
 		vector(vector<bool> const& rhs)
+			: vector()
+		{
+			assign(rhs);
+		}
+
+		vector(::std::vector<bool> const& rhs)
+			: vector()
+		{
+			assign(rhs);
+		}
+
+		vector<bool>& operator=(vector<bool> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		vector<bool>& operator=(::std::vector<bool> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		void assign(vector<bool> const& rhs)
 		{
 			m_Vec = rhs.m_Vec;
 			m_Size = rhs.m_Size;
 		}
 
-	public:
-		vector() = delete;
-		vector(vector<bool>&&) = delete;
-		~vector() = default;
-
-		vector<bool>& operator=(vector<bool> const&) = delete;
-
-		vector(::std::vector<bool> const& rhs)
-			: m_Size(0u)
+		void assign(::std::vector<bool> const& rhs)
 		{
 			::std::uint32_t buffer = 0u;
 
@@ -135,9 +202,7 @@ namespace gdstd
 			}
 
 			if (buffer)
-			{
 				m_Vec.push_back(buffer);
-			}
 		}
 	};
 #else
@@ -165,6 +230,14 @@ namespace gdstd
 		BitIterator m_Finish;
 		::std::uintptr_t m_StorageEnd;
 
+		void clear_data()
+		{
+			::gdstd::free(m_Start.m_P);
+			m_Start = {};
+			m_Finish = {};
+			m_StorageEnd = 0u;
+		}
+
 		::std::uint8_t const* internal_data() const
 		{
 			return reinterpret_cast<::std::uint8_t const*>(m_Start.m_Base);
@@ -180,8 +253,47 @@ namespace gdstd
 			return (item_diff() * ITEM_BITS) + m_Finish.m_Offset;
 		}
 
-		vector(vector<bool> const& rhs)
+		vector()
+			: m_Start({}),
+			m_Finish({}),
+			m_StorageEnd({}) {}
+
+	public:
+		vector(vector<bool>&&) = delete;
+
+		~vector()
 		{
+			clear_data();
+		}
+
+		vector(vector<bool> const& rhs)
+			: vector()
+		{
+			assign(rhs);
+		}
+
+		vector(::std::vector<bool> const& rhs)
+			: vector()
+		{
+			assign(rhs);
+		}
+
+		vector<bool>& operator=(vector<bool> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		vector<bool>& operator=(::std::vector<bool> const& rhs)
+		{
+			assign(rhs);
+			return *this;
+		}
+
+		void assign(vector<bool> const& rhs)
+		{
+			clear_data();
+
 			auto const bufSize = rhs.m_StorageEnd - rhs.m_Start.m_Base;
 
 			m_Start.m_P = ::gdstd::allocate<BitBuffer*>(bufSize);
@@ -196,22 +308,13 @@ namespace gdstd
 				bufSize);
 		}
 
-	public:
-		vector() = delete;
-		vector(vector<bool>&&) = delete;
-
-		~vector()
+		void assign(::std::vector<bool> const& rhs)
 		{
-			::gdstd::free(m_Start.m_P);
-		}
+			clear_data();
 
-		vector<bool>& operator=(vector<bool> const&) = delete;
-
-		vector(::std::vector<bool> const& rhs)
-		{
-			auto const bufferSize = ::gdstd::round_size(
+			auto const bufferSize =
 				static_cast<::std::size_t>(
-					::std::ceil(rhs.size() / 8.0f)));
+					::std::ceil(rhs.size() / 8.0f));
 
 			m_Start.m_P = ::gdstd::allocate<BitBuffer*>(bufferSize);
 			m_Start.m_Offset = 0u;

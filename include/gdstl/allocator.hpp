@@ -7,36 +7,22 @@
 
 namespace gdstd
 {
-	// Must be a power of 2!
-	static auto constexpr ALLOC_SIZE = 0x1000;
-
 	extern "C" ::std::uintptr_t gdstd_allocate_raw(::std::size_t const size);
 	extern "C" void gdstd_free_raw(::std::uintptr_t p);
 
-	inline ::std::size_t round_size(::std::size_t const size)
+	template <typename T>
+	typename ::std::enable_if<
+		::std::is_pointer<T>::value,
+		T>::type allocate(::std::size_t const size)
 	{
-		return ALLOC_SIZE + (size & ~(ALLOC_SIZE - 1u));
+		return reinterpret_cast<T>(
+			gdstd_allocate_raw(size));
 	}
 
 	template <typename T>
-	auto allocate(::std::size_t const size)
-		-> typename ::std::enable_if_t<
-		::std::is_pointer_v<T>,
-		T>
-	{
-		if (!(size & (ALLOC_SIZE - 1u)))
-		{
-			return reinterpret_cast<T>(
-				gdstd_allocate_raw(size));
-		}
-		
-		return nullptr;
-	}
-
-	template <typename T>
-	auto free(T p)
-		-> typename ::std::enable_if_t<
-		::std::is_pointer_v<T>>
+	typename ::std::enable_if<
+		::std::is_pointer<T>::value
+		>::type free(T p)
 	{
 		gdstd_free_raw(reinterpret_cast<::std::uintptr_t>(p));
 	}
