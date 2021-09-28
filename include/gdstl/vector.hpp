@@ -127,7 +127,7 @@ namespace gdstd
 
 		return ::std::vector<T>();
 	}
-#if 0 && defined(GDSTL_USES_MSVC)
+#if defined(GDSTL_USES_MSVC)
 	template<>
 	class vector<bool>
 	{
