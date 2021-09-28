@@ -241,12 +241,15 @@ namespace gdstd
 
 		void clear_data()
 		{
-			auto refc = decrement_refc();
+			if (m_P)
+			{
+				auto refc = decrement_refc();
 
-			if (refc <= 0u)
-				::gdstd::free(data());
+				if (refc <= 0u)
+					::gdstd::free(data());
 
-			m_P = nullptr;
+				m_P = nullptr;
+			}
 		}
 
 		bool is_valid() const
@@ -303,8 +306,12 @@ namespace gdstd
 				return;
 
 			clear_data();
-			m_P = rhs.m_P;
-			increment_refc();
+
+			if (rhs.m_P)
+			{
+				m_P = rhs.m_P;
+				increment_refc();
+			}
 		}
 
 		void assign(::std::basic_string<T> const& rhs)

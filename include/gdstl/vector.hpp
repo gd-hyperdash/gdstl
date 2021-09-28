@@ -54,7 +54,9 @@ namespace gdstd
 
 		void clear_data()
 		{
-			::gdstd::free(m_Data.m_P);
+			if (m_Data.m_P)
+				::gdstd::free(m_Data.m_P);
+
 			m_Data = {};
 		}
 
@@ -232,7 +234,9 @@ namespace gdstd
 
 		void clear_data()
 		{
-			::gdstd::free(m_Start.m_P);
+			if (m_Start.m_P)
+				::gdstd::free(m_Start.m_P);
+
 			m_Start = {};
 			m_Finish = {};
 			m_StorageEnd = 0u;
