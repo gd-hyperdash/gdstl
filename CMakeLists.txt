@@ -8,13 +8,15 @@ project(gdstl)
 # Checks
 
 IF (NOT GDSTL_PATH)
-    MESSAGE(FATAL_ERROR "\"GDSTL_PATH\" variable not set!")
+    set (GDSTL_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+    MESSAGE(WARNING "\"GDSTL_PATH\" not set, using fixed variable instead.")
 ENDIF()
 
 STRING(REPLACE "\\" "/" GDSTL_PATH_ESCAPED ${GDSTL_PATH})
 
 IF(NOT GDSTL_TARGET)
-    MESSAGE(FATAL_ERROR "\"GDSTL_TARGET\" variable not set!")
+    set (GDSTL_TARGET ${CMAKE_SYSTEM_NAME})
+    MESSAGE(WARNING "\"GDSTL_TARGET\" not set, using fixed variable instead.")
 ENDIF()
 
 STRING(TOLOWER ${GDSTL_TARGET} GDSTL_TARGET_LOWER)
