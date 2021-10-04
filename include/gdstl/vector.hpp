@@ -1,7 +1,7 @@
 #ifndef _GDSTL_VECTOR_HPP
 #define _GDSTL_VECTOR_HPP
 
-#include "allocator.hpp"
+#include "container_base.hpp"
 
 #include <cmath>
 #include <vector>
@@ -13,6 +13,12 @@ namespace gdstd
 	{
 		template <typename R>
 		friend ::std::vector<R> to_vector(vector<R> const&);
+
+		static_assert(
+			::std::is_trivial_v<T> || ::gdstd::VecNonTrivialImpl<T>(),
+			"Invalid object type!");
+
+		static auto constexpr ITEM_SIZE = sizeof(T);
 
 		struct VectorBase
 		{
@@ -55,7 +61,19 @@ namespace gdstd
 		void clear_data()
 		{
 			if (m_Data.m_P)
+			{
+				if constexpr(!::std::is_trivial_v<T>)
+				{
+					for (auto p = m_Data.m_Start;
+						p < m_Data.m_Finish;
+						p += ITEM_SIZE)
+					{
+						reinterpret_cast<T*>(p)->~T();
+					}
+				}
+
 				::gdstd::free(m_Data.m_P);
+			}
 
 			m_Data = {};
 		}
@@ -102,6 +120,9 @@ namespace gdstd
 
 		void assign(vector<T> const& rhs)
 		{
+			if (this == &rhs)
+				return;
+
 			clear_data();
 			init_data(
 				reinterpret_cast<void const*>(rhs.m_Data.m_P),
@@ -182,6 +203,9 @@ namespace gdstd
 
 		void assign(vector<bool> const& rhs)
 		{
+			if (this == &rhs)
+				return;
+
 			m_Vec = rhs.m_Vec;
 			m_Size = rhs.m_Size;
 		}
@@ -296,6 +320,9 @@ namespace gdstd
 
 		void assign(vector<bool> const& rhs)
 		{
+			if (this == &rhs)
+				return;
+
 			clear_data();
 
 			auto const bufSize = rhs.m_StorageEnd - rhs.m_Start.m_Base;
@@ -353,6 +380,10 @@ namespace gdstd
 
 		return ret;
 	}
+
+	template <typename T>
+	struct VecNonTrivialImpl<::gdstd::vector<T>>
+		: ::std::true_type {};
 }
 
 #endif /* _GDSTL_VECTOR_HPP */

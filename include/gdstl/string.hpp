@@ -1,7 +1,7 @@
 #ifndef _GDSTL_STRING_HPP
 #define _GDSTL_STRING_HPP
 
-#include "allocator.hpp"
+#include "container_base.hpp"
 
 #include <string>
 
@@ -337,6 +337,10 @@ namespace gdstd
 		return ::std::basic_string<T>();
 	}
 #endif // GDSTL_USES_MSVC
+
+	template <typename T>
+	struct VecNonTrivialImpl<::gdstd::basic_string<T>>
+		: ::std::true_type {};
 
 	using string = ::gdstd::basic_string<char>;
 	using wstring = ::gdstd::basic_string<wchar_t>;
