@@ -1,7 +1,7 @@
-#ifndef _GDSTL_STRING_HPP
-#define _GDSTL_STRING_HPP
+#ifndef _GDSTL_STRING_H
+#define _GDSTL_STRING_H
 
-#include "container_base.hpp"
+#include "container_base.h"
 
 #include <string>
 
@@ -345,15 +345,15 @@ namespace gdstd
 	using string = ::gdstd::basic_string<char>;
 	using wstring = ::gdstd::basic_string<wchar_t>;
 
-	inline ::std::string to_string(gdstd::string const& s)
+	inline ::std::string to_string(::gdstd::string const& s)
 	{
 		return to_basic_string(s);
 	}
 
-	inline ::std::wstring to_wstring(gdstd::wstring const& s)
+	inline ::std::wstring to_wstring(::gdstd::wstring const& s)
 	{
 		return to_basic_string(s);
 	}
 }
 
-#endif /* _GDSTL_STRING_HPP */
+#endif /* _GDSTL_STRING_H */

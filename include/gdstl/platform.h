@@ -1,5 +1,5 @@
-#ifndef _GDSTL_PLATFORM_HPP
-#define _GDSTL_PLATFORM_HPP
+#ifndef _GDSTL_PLATFORM_H
+#define _GDSTL_PLATFORM_H
 
 #include <cstdlib>
 #include <cstdint>
@@ -9,4 +9,4 @@
 #define GDSTL_USES_MSVC
 #endif
 
-#endif /* _GDSTL_PLATFORM_HPP */
+#endif /* _GDSTL_PLATFORM_H */

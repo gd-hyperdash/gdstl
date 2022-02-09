@@ -1,7 +1,7 @@
-#ifndef _GDSTL_VECTOR_HPP
-#define _GDSTL_VECTOR_HPP
+#ifndef _GDSTL_VECTOR_H
+#define _GDSTL_VECTOR_H
 
-#include "container_base.hpp"
+#include "container_base.h"
 
 #include <cmath>
 #include <vector>
@@ -386,4 +386,4 @@ namespace gdstd
 		: ::std::true_type {};
 }
 
-#endif /* _GDSTL_VECTOR_HPP */
+#endif /* _GDSTL_VECTOR_H */

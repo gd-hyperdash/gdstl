@@ -1,7 +1,7 @@
-#ifndef _GDSTL_ALLOCATOR_HPP
-#define _GDSTL_ALLOCATOR_HPP
+#ifndef _GDSTL_ALLOCATOR_H
+#define _GDSTL_ALLOCATOR_H
 
-#include "platform.hpp"
+#include "platform.h"
 
 #include <type_traits>
 
@@ -31,4 +31,4 @@ namespace gdstd
 	}
 }
 
-#endif /* _GDSTL_ALLOCATOR_HPP */
+#endif /* _GDSTL_ALLOCATOR_H */
