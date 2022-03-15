@@ -284,7 +284,7 @@ namespace gdstd
 		vector()
 			: m_Start({}),
 			m_Finish({}),
-			m_StorageEnd({}) {}
+			m_StorageEnd(0u) {}
 
 	public:
 		vector(vector<bool>&&) = delete;
